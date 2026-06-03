@@ -5,57 +5,209 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IQA Benchmarking Results</title>
     <style>
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            max-width: 1000px;
             margin: 40px auto;
             padding: 0 20px;
-            background-color: #f9f9f9;
-            color: #333;
+            background-color: var(--bg-color);
+            color: var(--text-main);
         }
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 40px;
-        }
+
+        h1 { text-align: center; color: #0f172a; font-size: 2.25rem; margin-bottom: 10px; font-weight: 800; }
+        .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 40px; }
+
+        /* Container where sections will be dynamically injected */
+        #datasets-container { margin-top: 20px; }
+
         .dataset-section {
-            background-color: #ffffff;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+            overflow: hidden;
+            transition: all 0.2s ease;
         }
-        .dataset-name {
-            margin: 0;
-            color: #2980b9;
-            font-size: 1.5rem;
+
+        .dataset-section:hover { border-color: #cbd5e1; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+
+        .dataset-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 24px; cursor: pointer; user-select: none;
         }
+
+        .dataset-name { margin: 0; color: #0f172a; font-size: 1.3rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        .dataset-name::before { content: "📊"; }
+        .toggle-icon { font-size: 0.85rem; color: var(--text-muted); transition: transform 0.2s ease; }
+
+        .dataset-content {
+            max-height: 0; overflow: hidden;
+            transition: max-height 0.3s ease-out; background-color: #fafafa;
+        }
+
+        .dataset-section.active .dataset-content { max-height: 600px; border-top: 1px solid var(--border-color); }
+        .dataset-section.active .toggle-icon { transform: rotate(180deg); }
+
+        .search-container { padding: 16px 24px; background-color: #ffffff; border-bottom: 1px solid var(--border-color); }
+        .search-input { width: 100%; padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; outline: none; }
+        .search-input:focus { border-color: var(--primary-color); }
+
+        .table-responsive { max-height: 450px; overflow-y: auto; }
+        .data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem; }
+        
+        .data-table th {
+            position: sticky; top: 0; background-color: #f1f5f9; color: #334155;
+            font-weight: 600; padding: 12px 24px; border-bottom: 2px solid var(--border-color); z-index: 10;
+        }
+
+        .data-table td { padding: 12px 24px; border-bottom: 1px solid var(--border-color); }
+        .data-table tbody tr:nth-child(even) { background-color: #f8fafc; }
+        .data-table tbody tr:hover { background-color: #f1f5f9; }
+        .score-badge { font-family: monospace; font-weight: bold; }
+        .loading-text { padding: 30px; text-align: center; color: var(--text-muted); font-style: italic; }
     </style>
 </head>
-<body>
 
-    <h1>Image Quality Assessment (IQA) Datasets</h1>
+    <body>
 
-    <div class="dataset-section">
-        <h2 class="dataset-name">CSIQ </h2>
-    </div>
+        <h1>Image Quality Assessment Datasets</h1>
+        <div class="subtitle">IQA</div>
 
-    <div class="dataset-section">
-        <h2 class="dataset-name">TID2013 </h2>
-    </div>
+        <div id="datasets-container"></div>
 
-    <div class="dataset-section">
-        <h2 class="dataset-name">KADID10K </h2>
-    </div>
+        <script src="config.js"></script>
+        <script>
+            const loadedStatus = {};
 
-    <div class="dataset-section">
-        <h2 class="dataset-name">PIPAL </h2>
-    </div>
+            function renderUI() {
+                const container = document.getElementById('datasets-container');
+                container.innerHTML = '';
 
-    <div class="dataset-section">
-        <h2 class="dataset-name">LIVE </h2>
-    </div>
+                IQA_CONFIG.forEach(dataset => {
+                    loadedStatus[dataset.id] = false;
 
-</body>
+                    const section     = document.createElement('div');
+                    section.className = 'dataset-section';
+                    section.id        = dataset.id;
+
+                    section.innerHTML = `
+                        <div class="dataset-header" onclick="toggleDataset('${dataset.id}', '${dataset.csvPath}')">
+                            <h2 class="dataset-name">${dataset.name}</h2>
+                            <span class="toggle-icon">▼</span>
+                        </div>
+                        <div class="dataset-content">
+                            <div class="search-container">
+                                <input type="text" class="search-input" id="${dataset.id}-search" 
+                                    placeholder="Search images in ${dataset.name}..." onkeyup="filterTable('${dataset.id}')">
+                            </div>
+                            <div class="table-responsive">
+                                <div id="${dataset.id}-loading" class="loading-text">🔄 Fetching and parsing ${dataset.csvPath}...</div>
+                                <table class="data-table" id="${dataset.id}-table" style="display: none;">
+                                    <thead>
+                                        <tr>
+                                            <th>Reference Image</th>
+                                            <th>Distorted Image</th>
+                                            <th>Quality Score</th>
+                                            <th>JND Mapped</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="${dataset.id}-table-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(section);
+                });
+            }
+
+            function toggleDataset(id, csvPath) {
+                const section = document.getElementById(id);
+                const isActive = section.classList.contains('active');
+                
+                document.querySelectorAll('.dataset-section').forEach(s => s.classList.remove('active'));
+                
+                if (!isActive) {
+                    section.classList.add('active');
+                    if (!loadedStatus[id]) {
+                        fetchAndLoadCSV(id, csvPath);
+                    }
+                }
+            }
+
+            function fetchAndLoadCSV(id, csvPath) {
+                fetch(csvPath)
+                    .then(response => {
+                        if (!response.ok) throw new Error('File not found');
+                        return response.text();
+                    })
+                    .then(data => {
+                        const rows = data.split('\n');
+                        const tbody = document.getElementById(`${id}-table-body`);
+                        tbody.innerHTML = '';
+
+                        for (let i = 1; i < rows.length; i++) {
+                            const rowData = rows[i].trim();
+                            if (!rowData) continue;
+
+                            const columns = rowData.split(',');
+                            if (columns.length < 4) continue;
+
+                            const qScore = parseFloat(columns[2]).toFixed(4);
+                            const jndMapped = parseFloat(columns[3]).toFixed(4);
+
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${columns[0]}</td>
+                                <td><code>${columns[1]}</code></td>
+                                <td><span class="score-badge">${qScore}</span></td>
+                                <td><span class="score-badge">${jndMapped}</span></td>
+                            `;
+                            tbody.appendChild(tr);
+                        }
+
+                        document.getElementById(`${id}-loading`).style.display = 'none';
+                        document.getElementById(`${id}-table`).style.display = 'table';
+                        loadedStatus[id] = true;
+                    })
+                    .catch(error => {
+                        document.getElementById(`${id}-loading`).innerText = `❌ Error: Could not load "${csvPath}". Make sure file exists in the directory.`;
+                        console.error(error);
+                    });
+            }
+
+            function filterTable(id) {
+                const input = document.getElementById(`${id}-search`);
+                const filter = input.value.toLowerCase();
+                const table = document.getElementById(`${id}-table`);
+                const tr = table.getElementsByTagName('tr');
+
+                for (let i = 1; i < tr.length; i++) {
+                    const tdRef = tr[i].getElementsByTagName('td')[0];
+                    const tdDis = tr[i].getElementsByTagName('td')[1];
+                    if (tdRef || tdDis) {
+                        const txtRef = tdRef.textContent || tdRef.innerText;
+                        const txtDis = tdDis.textContent || tdDis.innerText;
+                        if (txtRef.toLowerCase().includes(filter) || txtDis.toLowerCase().includes(filter)) {
+                            tr[i].style.display = "";
+                        } else {
+                            tr[i].style.display = "none";
+                        }
+                    }
+                }
+            }
+
+            renderUI();
+        </script>
+
+    </body>
 </html>
