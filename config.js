@@ -5,7 +5,7 @@ const IQA_CONFIG = {
         datasets: [
             { id: "csiq_base", name: "CSIQ Dataset", csvFile: "csiq_baseline_results.csv" },
             { id: "tid2013_base", name: "TID2013 Dataset", csvFile: "tid2013_baseline_results.csv" },
-            { id: "kadid_base", name: "KADID10K Dataset", csvFile: "kadid10k_results_Pathcing_D.csv" },
+            { id: "kadid_base", name: "KADID10K Dataset", csvFile: "kadid10k_baseline_results.csv" },
             { id: "pipal_base", name: "PIPAL Dataset", csvFile: "pipal_baseline_results.csv" },
             { id: "live_patch1", name: "LIVE Dataset (Part 1)", csvFile: "live_results_p1.csv" },
             { id: "live_patch2", name: "LIVE Dataset (Part 2)", csvFile: "live_results_p2.csv" }
