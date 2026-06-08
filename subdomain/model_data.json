@@ -1,0 +1,5 @@
+[
+    { "section": "features", "total_conv": 13 },
+    { "section": "avgpool", "total_conv": 0 },
+    { "section": "classifier", "total_conv": 0 }
+]

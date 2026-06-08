@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Architecture Loader - Dark Theme</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* تم تاریک برای کل صفحه */
+        body {
+            background-color: #0f172a; /* سورمه‌ای خیلی تیره نزدیک به مشکی */
+            color: #f8fafc; /* متن سفید مایل به خاکستری */
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        /* استایل باکس‌های اصلی در تم دارک */
+        .section-box {
+            background-color: #1e293b; /* خاکستری-تیره متمایل به آبی */
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
+        }
+
+        /* عنوان هر بخش */
+        .section-title {
+            font-size: 18px;
+            color: #e2e8f0;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #334155;
+            padding-bottom: 8px;
+        }
+
+        .conv-count {
+            font-size: 14px;
+            background-color: #3b82f6; /* آبی روشن‌تر برای کنتراست در تم دارک */
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .conv-count.zero {
+            background-color: #475569;
+        }
+
+        .layers-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        /* استایل باکس‌های کوچک لایه‌ها در تم دارک */
+        .conv-layer {
+            background-color: #1e3a8a; /* آبی تیره مایل به کاربنی */
+            color: #93c5fd; /* متن آبی آسمانی روشن */
+            border: 1px solid #2563eb;
+            border-radius: 6px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .conv-layer:hover {
+            background-color: #3b82f6;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+
+        .empty-message {
+            color: #64748b;
+            font-style: italic;
+            font-size: 14px;
+        }
+        
+        .error-message {
+            color: #fca5a5;
+            background-color: #7f1d1d;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #b91c1c;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="architecture-container">
+        <div style="text-align: center; color: #64748b;">Loading model architecture data...</div>
+    </div>
+
+    <script>
+        const container = document.getElementById('architecture-container');
+
+        function renderArchitecture(data) {
+            container.innerHTML = '';
+
+            data.forEach(item => {
+                const sectionBox = document.createElement('div');
+                sectionBox.className = 'section-box';
+
+                const sectionTitle = document.createElement('div');
+                sectionTitle.className = 'section-title';
+                
+                const badgeClass = item.total_conv === 0 ? 'conv-count zero' : 'conv-count';
+                
+                sectionTitle.innerHTML = `
+                    <span>${item.section}</span>
+                    <span class="${badgeClass}">${item.total_conv} Conv</span>
+                `;
+                sectionBox.appendChild(sectionTitle);
+
+                const layersContainer = document.createElement('div');
+                layersContainer.className = 'layers-container';
+
+                if (item.total_conv > 0) {
+                    for (let i = 1; i <= item.total_conv; i++) {
+                        const convLayer = document.createElement('div');
+                        convLayer.className = 'conv-layer';
+                        convLayer.innerText = i;
+                        layersContainer.appendChild(convLayer);
+                    }
+                } else {
+                    const emptyMessage = document.createElement('div');
+                    emptyMessage.className = 'empty-message';
+                    emptyMessage.innerText = 'No convolution layers found in this section.';
+                    layersContainer.appendChild(emptyMessage);
+                }
+
+                sectionBox.appendChild(layersContainer);
+                container.appendChild(sectionBox);
+            });
+        }
+
+        async function loadModelData() {
+            try {
+                const response = await fetch('model_data.json');
+                
+                if (!response.ok) {
+                    throw new Error('JSON file not found or server error.');
+                }
+                
+                const data = await response.json();
+                renderArchitecture(data);
+                
+            } catch (error) {
+                console.error('Error fetching JSON:', error);
+                container.innerHTML = `<div class="error-message">Error loading data: ${error.message}</div>`;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', loadModelData);
+    </script>
+</body>
+</html>
