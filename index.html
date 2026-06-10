@@ -3,246 +3,269 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IQA Benchmarking Results</title>
+    <title>IQA Evaluation Dashboard</title>
     <style>
-        :root {
-            --primary-color: #2563eb;
-            --bg-color: #f8fafc;
-            --card-bg: #ffffff;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --border-color: #e2e8f0;
+        /* Dark & Modern Professional Theme */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
-            max-width: 1000px;
-            margin: 40px auto;
-            padding: 0 20px;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-        }
-
-        h1 { text-align: center; color: #0f172a; font-size: 2.25rem; margin-bottom: 10px; font-weight: 800; }
-        .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 30px; }
-
-        /* Method Selector Tabs */
-        .method-tabs {
+            background-color: #121214;
+            color: #e2e8f0;
             display: flex;
             justify-content: center;
-            gap: 15px;
-            margin-bottom: 35px;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px;
         }
 
-        .tab-button {
-            padding: 12px 30px;
-            font-size: 1.1rem;
+        .container {
+            background-color: #1a1a1e;
+            border: 1px solid #2d2d34;
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 1000px; 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 1.6rem;
+            margin-bottom: 10px;
+            color: #ffffff;
             font-weight: 600;
-            background-color: #cbd5e1;
-            color: #475569;
-            border: none;
-            border-radius: 30px;
+            letter-spacing: 0.5px;
+        }
+
+        p.subtitle {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-bottom: 30px;
+        }
+
+        .control-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            background-color: #252529;
+            border: 1px solid #3f3f46;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s ease;
             cursor: pointer;
-            transition: all 0.2s ease;
         }
 
-        .tab-button.active {
-            background-color: var(--primary-color);
+        select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background-color: #2563eb;
             color: white;
-            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            margin-top: 10px;
+            letter-spacing: 0.5px;
         }
 
-        .tab-button:hover:not(.active) {
-            background-color: #94a3b8;
-            color: #0f172a;
+        button:hover {
+            background-color: #1d4ed8;
         }
 
-        /* Container Design */
-        .dataset-section {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            margin-bottom: 16px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
-            overflow: hidden;
-            transition: all 0.2s ease;
+        button:active {
+            transform: scale(0.98);
         }
 
-        .dataset-section:hover { border-color: #cbd5e1; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
-        .dataset-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; cursor: pointer; user-select: none; }
-        .dataset-name { margin: 0; color: #0f172a; font-size: 1.3rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
-        .dataset-name::before { content: "📊"; }
-        .toggle-icon { font-size: 0.85rem; color: var(--text-muted); transition: transform 0.2s ease; }
-        .dataset-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; background-color: #fafafa; }
-        .dataset-section.active .dataset-content { max-height: 600px; border-top: 1px solid var(--border-color); }
-        .dataset-section.active .toggle-icon { transform: rotate(180deg); }
-        .search-container { padding: 16px 24px; background-color: #ffffff; border-bottom: 1px solid var(--border-color); }
-        .search-input { width: 100%; padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; outline: none; }
-        .search-input:focus { border-color: var(--primary-color); }
-        .table-responsive { max-height: 450px; overflow-y: auto; }
-        .data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem; }
-        
-        .data-table th {
-            position: sticky; top: 0; background-color: #f1f5f9; color: #334155;
-            font-weight: 600; padding: 12px 24px; border-bottom: 2px solid var(--border-color); z-index: 10;
+        #result {
+            margin-top: 35px;
+            border-top: 1px solid #2d2d34;
+            padding-top: 30px;
+            min-height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
         }
 
-        .data-table td { padding: 12px 24px; border-bottom: 1px solid var(--border-color); }
-        .data-table tbody tr:nth-child(even) { background-color: #f8fafc; }
-        .data-table tbody tr:hover { background-color: #f1f5f9; }
-        .score-badge { font-family: monospace; font-weight: bold; }
-        .loading-text { padding: 30px; text-align: center; color: var(--text-muted); font-style: italic; }
+        .loading-text {
+            color: #3b82f6;
+            font-size: 0.95rem;
+            animation: pulse 1.5s infinite;
+        }
+
+        img.output-image {
+            width: 100%; 
+            max-width: 920px; 
+            height: auto; 
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            border: 1px solid #3f3f46;
+            cursor: zoom-in; 
+            transition: transform 0.3s ease;
+        }
+
+        img.output-image:hover {
+            transform: scale(1.01); 
+        }
+
+        .lightbox {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(10, 10, 12, 0.95);
+            justify-content: center;
+            align-items: center;
+            cursor: zoom-out;
+        }
+
+        .lightbox img {
+            max-width: 95%;
+            max-height: 95%;
+            border-radius: 6px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
     </style>
 </head>
 <body>
 
-    <h1>Image Quality Assessment Datasets</h1>
-    <!-- <div class="subtitle"> IQA </div> -->
+<div class="container">
+    <h2>Image Quality Assessment Dashboard</h2>
+    <p class="subtitle">Select reference image and distortion parameters</p>
 
-    <div class="method-tabs">
-        <button class="tab-button active" id="btn-baseline" onclick="switchMethod('baseline')">ICCKE Method</button>
-        <button class="tab-button" id="btn-patching" onclick="switchMethod('patching')">Patching Method </button>
+    <div class="control-panel">
+        <div class="form-group">
+            <label for="imgNum">Reference Image:</label>
+            <select id="imgNum"></select>
+        </div>
+
+        <div class="form-group">
+            <label for="distType">Distortion Type:</label>
+            <select id="distType"></select>
+        </div>
     </div>
 
-    <div id="datasets-container"></div>
+    <button onclick="generateImage()">Render & Process Image</button>
 
-    <script src="config.js"></script>
-    <script>
-        let currentMethod = 'baseline';
-        const loadedStatus = {};
+    <div id="result">
+        <span style="color: #64748b; font-size: 0.9rem;">No image loaded. Select parameters and click render.</span>
+    </div>
+</div>
 
-        function renderUI(methodKey) {
-            currentMethod = methodKey;
-            const container = document.getElementById('datasets-container');
-            container.innerHTML = '';
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <img id="lightbox-img" src="" alt="Enlarged view">
+</div>
 
-            const methodConfig = IQA_CONFIG[methodKey];
+<script>
+    const imgSelect = document.getElementById('imgNum');
+    for (let i = 1; i <= 25; i++) {
+        imgSelect.options[imgSelect.options.length] = new Option(`Reference Image ${i}`, i);
+    }
 
-            methodConfig.datasets.forEach(dataset => {
-                const uniqueId = dataset.id;
-                loadedStatus[uniqueId] = false;
+    const distSelect = document.getElementById('distType');
+    for (let i = 1; i <= 24; i++) {
+        distSelect.options[distSelect.options.length] = new Option(`Distortion Type ${i}`, i);
+    }
 
-                const fullPath = methodConfig.folder + dataset.csvFile;
+    // متغیری برای ذخیره محلی آدرس Blob موقت جهت جلوگیری از نشت حافظه
+    let currentImgObjectUrl = null;
 
-                const section = document.createElement('div');
-                section.className = 'dataset-section';
-                section.id = uniqueId;
+    function generateImage() {
+        const imgNum = document.getElementById('imgNum').value;
+        const distType = document.getElementById('distType').value;
+        const resultDiv = document.getElementById('result');
 
-                section.innerHTML = `
-                    <div class="dataset-header" onclick="toggleDataset('${uniqueId}', '${fullPath}')">
-                        <h2 class="dataset-name">${dataset.name}</h2>
-                        <span class="toggle-icon">▼</span>
-                    </div>
-                    <div class="dataset-content">
-                        <div class="search-container">
-                            <input type="text" class="search-input" id="${uniqueId}-search" 
-                                   placeholder="Search images in ${dataset.name}..." onkeyup="filterTable('${uniqueId}')">
-                        </div>
-                        <div class="table-responsive">
-                            <div id="${uniqueId}-loading" class="loading-text">🔄 Fetching and parsing ${dataset.csvFile}...</div>
-                            <table class="data-table" id="${uniqueId}-table" style="display: none;">
-                                <thead>
-                                    <tr>
-                                        <th>Reference Image</th>
-                                        <th>Distorted Image</th>
-                                        <th>Quality Score</th>
-                                        <th>JND Mapped</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="${uniqueId}-table-body"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(section);
-            });
-        }
+        const serverUrl = "https://donut-footwork-refinery.ngrok-free.dev"; 
+        const finalUrl = `${serverUrl}/generate-image?img_num=${imgNum}&dist_type=${distType}`;
 
-        function switchMethod(methodKey) {
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            if (methodKey === 'baseline') document.getElementById('btn-baseline').classList.add('active');
-            if (methodKey === 'patching') document.getElementById('btn-patching').classList.add('active');
-            
-            renderUI(methodKey);
-        }
+        resultDiv.innerHTML = "<span class='loading-text'>Fetching and processing image from server...</span>";
 
-        function toggleDataset(uniqueId, fullPath) {
-            const section = document.getElementById(uniqueId);
-            const isActive = section.classList.contains('active');
-            
-            document.querySelectorAll('.dataset-section').forEach(s => s.classList.remove('active'));
-            
-            if (!isActive) {
-                section.classList.add('active');
-                if (!loadedStatus[uniqueId]) {
-                    fetchAndLoadCSV(uniqueId, fullPath);
-                }
+        // ۱. استفاده از fetch برای ارسال هدر اختصاصی و دور زدن صفحه هشدار ngrok
+        fetch(finalUrl, {
+            method: "GET",
+            headers: {
+                "ngrok-skip-browser-warning": "any_value_works"
             }
-        }
-
-        function fetchAndLoadCSV(uniqueId, fullPath) {
-            fetch(fullPath)
-                .then(response => {
-                    if (!response.ok) throw new Error('File not found');
-                    return response.text();
-                })
-                .then(data => {
-                    const rows = data.split(/\r?\n/); 
-                    const tbody = document.getElementById(`${uniqueId}-table-body`);
-                    tbody.innerHTML = '';
-
-                    for (let i = 1; i < rows.length; i++) {
-                        const rowData = rows[i].trim();
-                        if (!rowData) continue;
-
-                        const columns = rowData.split(',');
-                        if (columns.length < 4) continue;
-
-                        const qScore = parseFloat(columns[2]).toFixed(4);
-                        const jndMapped = parseFloat(columns[3]).toFixed(4);
-
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td>${columns[0]}</td>
-                            <td><code>${columns[1]}</code></td>
-                            <td><span class="score-badge">${qScore}</span></td>
-                            <td><span class="score-badge">${jndMapped}</span></td>
-                        `;
-                        tbody.appendChild(tr);
-                    }
-
-                    document.getElementById(`${uniqueId}-loading`).style.display = 'none';
-                    document.getElementById(`${uniqueId}-table`).style.display = 'table';
-                    loadedStatus[uniqueId] = true;
-                })
-                .catch(error => {
-                    document.getElementById(`${uniqueId}-loading`).innerText = `❌ Could not load data from "${fullPath}".`;
-                    console.error(error);
-                });
-        }
-
-        function filterTable(uniqueId) {
-            const input = document.getElementById(`${uniqueId}-search`);
-            const filter = input.value.toLowerCase();
-            const table = document.getElementById(`${uniqueId}-table`);
-            const tr = table.getElementsByTagName('tr');
-
-            for (let i = 1; i < tr.length; i++) {
-                const tdRef = tr[i].getElementsByTagName('td')[0];
-                const tdDis = tr[i].getElementsByTagName('td')[1];
-                if (tdRef || tdDis) {
-                    const txtRef = tdRef.textContent || tdRef.innerText;
-                    const txtDis = tdDis.textContent || tdDis.innerText;
-                    if (txtRef.toLowerCase().includes(filter) || txtDis.toLowerCase().includes(filter)) {
-                        tr[i].style.display = "";
-                    } else {
-                        tr[i].style.display = "none";
-                    }
-                }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Server responded with an error status");
             }
-        }
+            return response.blob(); // دریافت پاسخ به صورت داده باینری (تصویر)
+        })
+        .then(blob => {
+            // ۲. پاکسازی آدرس قبلی برای بهینه‌سازی حافظه مرورگر
+            if (currentImgObjectUrl) {
+                URL.revokeObjectURL(currentImgObjectUrl);
+            }
 
-        renderUI('baseline');
-    </script>
+            // ۳. ساخت یک آدرس موقت برای دیتای تصویر
+            currentImgObjectUrl = URL.createObjectURL(blob);
+
+            const img = document.createElement('img');
+            img.src = currentImgObjectUrl;
+            img.className = 'output-image';
+            
+            img.onclick = function() {
+                openLightbox(currentImgObjectUrl);
+            };
+            
+            resultDiv.innerHTML = ""; 
+            resultDiv.appendChild(img);
+        })
+        .catch(error => {
+            console.error("Fetch error:", error);
+            resultDiv.innerHTML = "<p style='color:#ef4444; font-size: 0.9rem;'>❌ Connection Error! Make sure FastAPI server is running and Ngrok URL is correct.</p>";
+        });
+    }
+
+    function openLightbox(url) {
+        document.getElementById('lightbox-img').src = url;
+        document.getElementById('lightbox').style.display = 'flex';
+    }
+
+    function closeLightbox() {
+        document.getElementById('lightbox').style.display = 'none';
+    }
+</script>
+
 </body>
 </html>
