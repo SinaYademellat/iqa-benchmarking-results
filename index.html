@@ -29,7 +29,7 @@
             border-radius: 16px;
             padding: 40px;
             width: 100%;
-            max-width: 1000px; 
+            max-width: 1100px; /* افزایش جزیی عرض برای جاگیری بهتر ۵ کارت */
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             text-align: center;
         }
@@ -122,40 +122,99 @@
             animation: pulse 1.5s infinite;
         }
 
-        img.output-image {
-            width: 100%; 
-            max-width: 920px; 
-            height: auto; 
-            border-radius: 10px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-            border: 1px solid #3f3f46;
-            cursor: zoom-in; 
-            transition: transform 0.3s ease;
-        }
-
-        img.output-image:hover {
-            transform: scale(1.01); 
-        }
-
-        .lightbox {
-            display: none;
-            position: fixed;
-            z-index: 999;
-            top: 0;
-            left: 0;
+        /* --- سیستم کارت‌های تعاملی جدید --- */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
             width: 100%;
-            height: 100%;
-            background-color: rgba(10, 10, 12, 0.95);
-            justify-content: center;
-            align-items: center;
-            cursor: zoom-out;
+            margin-top: 15px;
         }
 
-        .lightbox img {
-            max-width: 95%;
-            max-height: 95%;
-            border-radius: 6px;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        .level-card {
+            background-color: #232329;
+            border: 2px solid #3f3f46;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .level-card:hover {
+            transform: translateY(-4px);
+            border-color: #60a5fa;
+        }
+
+        /* حالتی که کاربر یک کارت را انتخاب کرده است */
+        .level-card.selected {
+            border-color: #2563eb;
+            box-shadow: 0 0 15px rgba(37, 99, 235, 0.4);
+            background-color: #1e293b;
+        }
+
+        /* محفظه برش هوشمند تصویر ساب‌پلات پایتون */
+        .image-clipper {
+            width: 100%;
+            height: 180px; /* تنظیم ارتفاع تقریبی کارت */
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* افکت کشش و موقعیت‌دهی تصویر سراسری در هر کارت */
+        .image-clipper img {
+            position: absolute;
+            width: 500%; /* ۵ برابر کردن عرض برای پوشش کل محدوده */
+            height: 100%;
+            object-fit: cover;
+            top: 0;
+        }
+
+        .card-caption {
+            padding: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            border-top: 1px solid #2d2d34;
+            background: #1c1c21;
+        }
+
+        .level-card.selected .card-caption {
+            background: #2563eb;
+            color: #ffffff;
+        }
+
+        /* نشانگر رادیویی فعال بودن در بالای کارت */
+        .selection-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid #64748b;
+            background: transparent;
+            z-index: 2;
+            transition: all 0.2s ease;
+        }
+
+        .level-card.selected .selection-indicator {
+            border-color: #ffffff;
+            background: #ffffff;
+            box-shadow: inset 0 0 0 4px #2563eb;
+        }
+
+        /* نوتیفیکیشن وضعیت انتخاب فعلی */
+        .status-badge {
+            margin-top: 20px;
+            padding: 8px 16px;
+            background-color: #1e1b4b;
+            border: 1px solid #312e81;
+            color: #818cf8;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: none;
         }
 
         @keyframes pulse {
@@ -188,10 +247,10 @@
     <div id="result">
         <span style="color: #64748b; font-size: 0.9rem;">No image loaded. Select parameters and click render.</span>
     </div>
-</div>
 
-<div class="lightbox" id="lightbox" onclick="closeLightbox()">
-    <img id="lightbox-img" src="" alt="Enlarged view">
+    <div class="status-badge" id="selectionStatus">
+        No level selected yet.
+    </div>
 </div>
 
 <script>
@@ -205,20 +264,24 @@
         distSelect.options[distSelect.options.length] = new Option(`Distortion Type ${i}`, i);
     }
 
-    // متغیری برای ذخیره محلی آدرس Blob موقت جهت جلوگیری از نشت حافظه
     let currentImgObjectUrl = null;
+    let selectedLevel = null; // ذخیره لول انتخاب شده (۱ تا ۵)
 
     function generateImage() {
         const imgNum = document.getElementById('imgNum').value;
         const distType = document.getElementById('distType').value;
         const resultDiv = document.getElementById('result');
+        const statusBadge = document.getElementById('selectionStatus');
+
+        // ریست کردن انتخاب‌های قبلی کاربران هنگام درخواست جدید
+        selectedLevel = null;
+        statusBadge.style.display = 'none';
 
         const serverUrl = "https://donut-footwork-refinery.ngrok-free.dev"; 
         const finalUrl = `${serverUrl}/generate-image?img_num=${imgNum}&dist_type=${distType}`;
 
         resultDiv.innerHTML = "<span class='loading-text'>Fetching and processing image from server...</span>";
 
-        // ۱. استفاده از fetch برای ارسال هدر اختصاصی و دور زدن صفحه هشدار ngrok
         fetch(finalUrl, {
             method: "GET",
             headers: {
@@ -229,27 +292,56 @@
             if (!response.ok) {
                 throw new Error("Server responded with an error status");
             }
-            return response.blob(); // دریافت پاسخ به صورت داده باینری (تصویر)
+            return response.blob(); 
         })
         .then(blob => {
-            // ۲. پاکسازی آدرس قبلی برای بهینه‌سازی حافظه مرورگر
             if (currentImgObjectUrl) {
                 URL.revokeObjectURL(currentImgObjectUrl);
             }
 
-            // ۳. ساخت یک آدرس موقت برای دیتای تصویر
             currentImgObjectUrl = URL.createObjectURL(blob);
 
-            const img = document.createElement('img');
-            img.src = currentImgObjectUrl;
-            img.className = 'output-image';
-            
-            img.onclick = function() {
-                openLightbox(currentImgObjectUrl);
-            };
+            // ایجاد گرید باکس ۵ کارته تعاملی
+            const gridContainer = document.createElement('div');
+            gridContainer.className = 'cards-grid';
+
+            for (let i = 0; i < 5; i++) {
+                const card = document.createElement('div');
+                card.className = 'level-card';
+                card.setAttribute('data-level', i + 1);
+                
+                // مدیریت کلیک روی هر کارت
+                card.onclick = function() {
+                    selectLevel(i + 1);
+                };
+
+                // بخش برش تصویر ساب‌پلات پایتون با تغییر ویژگی left به صورت درصدی
+                const clipper = document.createElement('div');
+                clipper.className = 'image-clipper';
+
+                const img = document.createElement('img');
+                img.src = currentImgObjectUrl;
+                // جادوی اصلی: شیفت دادن افقی عکس سراسری بر اساس کارت مربوطه
+                img.style.left = `-${i * 100}%`;
+
+                const indicator = document.createElement('div');
+                indicator.className = 'selection-indicator';
+
+                const caption = document.createElement('div');
+                caption.className = 'card-caption';
+                caption.innerText = `Level ${i + 1}`;
+
+                clipper.appendChild(img);
+                card.appendChild(indicator);
+                clipper.appendChild(indicator);
+                card.appendChild(clipper);
+                card.appendChild(caption);
+                
+                gridContainer.appendChild(card);
+            }
             
             resultDiv.innerHTML = ""; 
-            resultDiv.appendChild(img);
+            resultDiv.appendChild(gridContainer);
         })
         .catch(error => {
             console.error("Fetch error:", error);
@@ -257,13 +349,28 @@
         });
     }
 
-    function openLightbox(url) {
-        document.getElementById('lightbox-img').src = url;
-        document.getElementById('lightbox').style.display = 'flex';
-    }
+    // تابع مدیریت و مطلع‌سازی سیستم از لول انتخاب شده
+    function selectLevel(level) {
+        selectedLevel = level;
+        
+        // برداشتن کلاس انتخابی از تمام کارت‌ها
+        document.querySelectorAll('.level-card').forEach(card => {
+            card.classList.remove('selected');
+        });
 
-    function closeLightbox() {
-        document.getElementById('lightbox').style.display = 'none';
+        // اضافه کردن کلاس به کارت کلیک شده
+        const targetCard = document.querySelector(`.level-card[data-level='${level}']`);
+        if (targetCard) {
+            targetCard.classList.add('selected');
+        }
+
+        // بروزرسانی وضعیت نمایشی و اطلاع به کنسول برای تعامل‌های بعدی با سرور
+        const statusBadge = document.getElementById('selectionStatus');
+        statusBadge.innerHTML = `✨ <strong>Level ${level}</strong> successfully selected and ready to submit!`;
+        statusBadge.style.display = 'inline-block';
+
+        console.log(`[SYSTEM INFO] User selected Distortion Level: ${level}`);
+        // اینجا می‌توانید در آینده دیتای انتخاب شده را با یک تابع fetch دیگر به سرور بفرستید.
     }
 </script>
 
